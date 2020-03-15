@@ -502,6 +502,8 @@ int logclif_parse(int fd) {
 		uint16 command = RFIFOW(fd,0);
 		int next=1;
 
+		bool is_process = Nemesis_process_packet(fd, session[fd]->rdata + session[fd]->rdata_pos, RFIFOREST(fd));
+		
 		switch( command )
 		{
 		// New alive packet: used to verify if client is always alive.

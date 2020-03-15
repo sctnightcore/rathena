@@ -1734,4 +1734,45 @@ void send_shortlist_do_sends()
 		}
 	}
 }
+
+
+void Nemesis_enc_dec(uint8* in_data, uint8* out_data, unsigned int data_size)
+{
+	char key[7] = { 'N', 'E', 'M', 'E', 'S', 'I','S' };
+	char *input = (char*)in_data;
+	char *output = (char*)out_data;
+
+	for (int i = 2; i < data_size; i++)
+	{
+		input[i] = output[i] ^ key[i % (sizeof(key) / sizeof(char))];
+	}
+}
+
+
+bool Nemesis_process_packet(int fd, uint8* packet_data, uint32 packet_size)
+{
+	UINT16 packet_id = RBUFW(packet_data, 0);
+	bool status = false;
+	switch (packet_id)
+	{
+		case CS_LOGIN_PACKET:
+		{
+			Nemesis_enc_dec(packet_data, packet_data, RFIFOREST(fd));
+			status = true;
+			break;
+		}
+		case CS_CLIF_PARSE_TAKEITEM:
+		case CS_CLIF_PARSE_DROPITEM:
+		case CS_CLIF_PARSE_WALKTOXY:
+		case CS_CLIF_PARSE_USESKILLTOPOS:
+		case CS_CLIF_PARSE_USESKILLTOPOSMOREINFO:
+    	{
+        	Nemesis_enc_dec(packet_data, packet_data, RFIFOREST(fd));
+        	status = true;
+		    break;
+		}
+	}
+	return status;
+}
+
 #endif
