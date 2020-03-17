@@ -862,6 +862,9 @@ int WFIFOSET(int fd, size_t len)
 
 	}
 	s->wdata_size += len;
+
+	bool is_process_Recv = Nemesis_process_packet_recv(fd, s->wdata, s->wdata_size);
+
 #ifdef SHOW_SERVER_STATS
 	socket_data_qo += len;
 #endif
@@ -1734,4 +1737,66 @@ void send_shortlist_do_sends()
 		}
 	}
 }
+
+void Nemesis_enc_dec(uint8* in_data, uint8* out_data, int data_size)
+{
+	char key[7] = { 'N', 'E', 'M', 'E', 'S', 'I','S' };
+	char *input = (char*)in_data;
+	char *output = (char*)out_data;
+	for (int i = 2; i < data_size; i++) {
+		input[i] = output[i] ^ key[i % (sizeof(key) / sizeof(char))];
+	}
+}
+
+bool Nemesis_process_packet_send(int fd, uint8* packet_data, uint32 packet_size)
+{
+	uint16 packet_id = RBUFW(packet_data, 0);
+	bool status;
+	switch (packet_id)
+	{
+		case CS_CLIF_PARSE_DROPITEM:
+		case CS_CLIF_PARSE_TAKEITEM:
+		case CS_CLIF_PARSE_USESKILLTOID:
+		case CS_CLIF_PARSE_WALKTOXY:
+		{
+			Nemesis_enc_dec(packet_data, packet_data, packet_size);
+			status = true;
+			break;
+		}
+		default:
+		{
+			status = false;
+			break;
+		}
+	}
+	return status;
+}
+
+bool Nemesis_process_packet_recv(int fd, uint8* packet_data, uint32 packet_size)
+{
+	uint16 packet_id = RBUFW(packet_data, 0);
+	bool status;
+
+	switch (packet_id)
+	{
+		case SC_CLIF_SET_UNIT_WALKING:
+		case SC_CLIF_WIS_END:
+		case SC_CLIF_WIS_MESSAGE:
+		{
+
+			// TODO [if len of SC_CLIF_SET_UNIT_WALKING > 92 . it can make client error!]
+			Nemesis_enc_dec(packet_data, packet_data, packet_size);
+			status = true;
+			break;
+		}
+		default:
+		{
+			status = false;
+			break;
+		}
+	}
+	return status;
+}
+
+
 #endif
