@@ -280,7 +280,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 	size_t packet_len = RFIFOREST(fd);
 
 	if( (command == 0x0064 && packet_len < 55)
-	||  (command == 0xAABB && packet_len < 55)
+	||  (command == 0xAABB && packet_len < 85)
 	||  (command == 0x0277 && packet_len < 84)
 	||  (command == 0x02b0 && packet_len < 85)
 	||  (command == 0x01dd && packet_len < 47)
@@ -292,6 +292,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 		int result;
 		char username[NAME_LENGTH];
 		char password[PASSWD_LENGTH];
+		char server_key[30];
 		unsigned char passhash[16];
 		uint8 clienttype;
 		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825 || command == 0xAABB);
@@ -320,6 +321,8 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			{
 				safestrncpy(password, RFIFOCP(fd,30), PASSWD_LENGTH);
 				clienttype = RFIFOB(fd,54);
+				safestrncpy(server_key, RFIFOCP(fd, 55), 30);
+
 			}
 			else
 			{
@@ -333,7 +336,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 		safestrncpy(sd->userid, username, NAME_LENGTH);
 		if( israwpass )
 		{
-			ShowStatus("Request for connection of %s (ip: %s)\n", sd->userid, ip);
+			ShowStatus("Request for connection of %s (ip: %s)(serverkey: %s)\n", sd->userid, ip, server_key);
 			safestrncpy(sd->passwd, password, PASSWD_LENGTH);
 			if( login_config.use_md5_passwds )
 				MD5_String(sd->passwd, sd->passwd);
@@ -344,6 +347,11 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			ShowStatus("Request for connection (passwdenc mode) of %s (ip: %s)\n", sd->userid, ip);
 			bin2hex(sd->passwd, passhash, 16); // raw binary data here!
 			sd->passwdenc = PASSWORDENC;
+		}
+
+		if (strcmp(server_key, "iw5WvBaKamN41NdHmBLB")) {
+			logclif_auth_failed(sd, 3);
+			return 0;
 		}
 
 		if( sd->passwdenc != 0 && login_config.use_md5_passwds )
