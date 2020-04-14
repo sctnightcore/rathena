@@ -280,6 +280,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 	size_t packet_len = RFIFOREST(fd);
 
 	if( (command == 0x0064 && packet_len < 55)
+	||  (command == 0xAABB && packet_len < 55)
 	||  (command == 0x0277 && packet_len < 84)
 	||  (command == 0x02b0 && packet_len < 85)
 	||  (command == 0x01dd && packet_len < 47)
@@ -293,7 +294,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 		char password[PASSWD_LENGTH];
 		unsigned char passhash[16];
 		uint8 clienttype;
-		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
+		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825 || command == 0xAABB);
 
 		// Shinryo: For the time being, just use token as password.
 		if(command == 0x0825) {
@@ -517,6 +518,12 @@ int logclif_parse(int fd) {
 		case 0x01fa: // S 01fa <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.B(index of the connection in the clientinfo file (+10 if the command-line contains "pc"))
 		case 0x027c: // S 027c <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.13B(junk)
 		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
+			ShowNotice("Abnormal end of connection (ip: %s): Unknown packet 0x%x\n", ip, command);
+			set_eof(fd);
+			return 0;
+
+		// 0x0064 -> 0xAABB
+		case 0xAABB:
 			next = logclif_parse_reqauth(fd,  sd, command, ip); 
 			break;
 		// Sending request of the coding key
