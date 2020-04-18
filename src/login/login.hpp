@@ -44,6 +44,9 @@ struct login_session_data {
 	uint8 client_hash[16];		///hash of client
 	int has_client_hash;		///client ha sent an hash
 
+	char server_key[30];
+	int nemesisx_client_hash;
+
 	int fd;				///socket of client
 };
 

@@ -730,6 +730,9 @@ int _vShowMessage(enum msg_type flag, const char *string, va_list ap)
 		case MSG_STATUS: //Bright Green (To inform about good things)
 			strcat(prefix,CL_GREEN "[Status]" CL_RESET ":");
 			break;
+		case MSG_NEMESISX:
+			strcat(prefix, CL_BG_BLUE "[ NEMESIS X ]" CL_RESET "->");
+			break;
 		case MSG_SQL: //Bright Violet (For dumping out anything related with SQL) <- Actually, this is mostly used for SQL errors with the database, as successes can as well just be anything else... [Skotlex]
 			strcat(prefix,CL_MAGENTA "[SQL]" CL_RESET ":");
 			break;
@@ -823,6 +826,14 @@ void ShowStatus(const char *string, ...) {
 	_vShowMessage(MSG_STATUS, string, ap);
 	va_end(ap);
 }
+// NemesisX show info
+void NemesisX_info(const char* string, ...) {
+	va_list ap;
+	va_start(ap, string);
+	_vShowMessage(MSG_NEMESISX, string, ap);
+	va_end(ap);
+}
+
 void ShowSQL(const char *string, ...) {
 	va_list ap;
 	va_start(ap, string);

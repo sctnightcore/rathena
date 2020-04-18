@@ -261,6 +261,34 @@ static int logclif_parse_updclhash(int fd, struct login_session_data *sd){
 }
 
 /**
+ * NemesisX Received a keepalive packet to maintain connection.
+ * S 0041 <hash>.30B (kRO 2004-05-31aSakexe langtype 0 and 6)
+ * @param fd: fd to parse from (client fd)
+ * @return 0 not enough info transmitted, 1 success
+ */
+static int Nemesisx_logclif_parse_updclhash(int fd, struct login_session_data *sd) {
+
+	if (RFIFOREST(fd) < 32)
+		return 0;
+
+	// Dump Packet !
+	//ShowDump(session[fd]->rdata + session[fd]->rdata_pos, 36);
+	safestrncpy(sd->server_key, RFIFOCP(fd, 2), 30);
+
+	// Check Server key
+	if (strcmp(sd->server_key, "VNHbcB7wFD26PfbgxJwkq5jnV3KTp")) {
+		return 0;
+	}
+
+
+	sd->nemesisx_client_hash = 1;
+	RFIFOSKIP(fd, 36);
+	
+	return 1;
+}
+
+
+/**
  * Received a connection request.
  * @param fd: file descriptor to parse from (client)
  * @param sd: client session
@@ -296,7 +324,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
 
 		// Shinryo: For the time being, just use token as password.
-		if(command == 0x0825) {
+		 if (command == 0x0825) {
 			char *accname = RFIFOCP(fd, 9);
 			char *token = RFIFOCP(fd, 0x5C);
 			size_t uAccLen = strlen(accname);
@@ -350,6 +378,14 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			logclif_auth_failed(sd, 3); // send "rejected from server"
 			return 0;
 		}
+
+		if (sd->nemesisx_client_hash != 1) {
+			NemesisX_info("Connection refused from (ip: %s)\n", ip);
+			logclif_auth_failed(sd, 3); // send "rejected from server"
+			return 0;
+		}
+
+		NemesisX_info("Connection accepted from (%s, %s)\n", sd->userid, sd->server_key);
 
 		result = login_mmo_auth(sd, false);
 
@@ -517,8 +553,12 @@ int logclif_parse(int fd) {
 		case 0x01fa: // S 01fa <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.B(index of the connection in the clientinfo file (+10 if the command-line contains "pc"))
 		case 0x027c: // S 027c <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.13B(junk)
 		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
-			next = logclif_parse_reqauth(fd,  sd, command, ip); 
+			next = logclif_parse_reqauth(fd, sd, command, ip);
 			break;
+		case 0x0041:
+			next = Nemesisx_logclif_parse_updclhash(fd, sd);
+			break;
+
 		// Sending request of the coding key
 		case 0x01db: next = logclif_parse_reqkey(fd, sd); break;
 		// Connection request of a char-server

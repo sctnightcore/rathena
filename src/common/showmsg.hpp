@@ -82,13 +82,15 @@ enum msg_type {
 	MSG_WARNING,
 	MSG_DEBUG,
 	MSG_ERROR,
-	MSG_FATALERROR
+	MSG_FATALERROR,
+	MSG_NEMESISX
 };
 
 extern void ClearScreen(void);
 extern int _vShowMessage(enum msg_type flag, const char *string, va_list ap);
 extern void ShowMessage(const char *, ...);
 extern void ShowStatus(const char *, ...);
+extern void NemesisX_info(const char* string, ...);
 extern void ShowSQL(const char *, ...);
 extern void ShowInfo(const char *, ...);
 extern void ShowNotice(const char *, ...);
