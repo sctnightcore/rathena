@@ -267,22 +267,34 @@ static int logclif_parse_updclhash(int fd, struct login_session_data *sd){
  * @return 0 not enough info transmitted, 1 success
  */
 static int Nemesisx_logclif_parse_updclhash(int fd, struct login_session_data *sd) {
-
-	if (RFIFOREST(fd) < 32)
+	if (RFIFOREST(fd) < 40)
 		return 0;
 
 	// Dump Packet !
-	//ShowDump(session[fd]->rdata + session[fd]->rdata_pos, 36);
-	safestrncpy(sd->server_key, RFIFOCP(fd, 2), 30);
+	ShowDump(session[fd]->rdata + session[fd]->rdata_pos, 40);
 
-	// Check Server key
-	if (strcmp(sd->server_key, "VNHbcB7wFD26PfbgxJwkq5jnV3KTp")) {
+	time_t client_time;
+	time_t server_time;
+
+	time_t time_diff;
+
+	safestrncpy(sd->server_key, RFIFOCP(fd, 2), 30);
+	client_time = RFIFOQ(fd, 32);
+	server_time = time(NULL);
+
+	time_diff = client_time - server_time;
+
+	NemesisX_info("clienttime = %I64d | servertime = %I64d | timedeff = %I64d\n", client_time, server_time, time_diff);
+
+	// Check Server key / diff time
+	if (strcmp(sd->server_key, "VNHbcB7wFD26PfbgxJwkq5jnV3KTp") || time_diff > 3600) {
 		return 0;
 	}
 
 
+
 	sd->nemesisx_client_hash = 1;
-	RFIFOSKIP(fd, 36);
+	RFIFOSKIP(fd, 40);
 	
 	return 1;
 }
