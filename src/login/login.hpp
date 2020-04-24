@@ -49,7 +49,7 @@ struct login_session_data {
 	// NemesisX
 	int NemesisX_status;
 	int NemesisX_gameguard;
-	uint64 NemesisX_clienttime;
+	uint32 NemesisX_clienttime;
 	char NemesisX_server_key[(32 + 1)];
 	char NemesisX_mac_address[(17 + 1)];
 };

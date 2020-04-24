@@ -473,7 +473,7 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
  * @return 0 not enough info transmitted, 1 success
  */
 static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
-	if (RFIFOREST(fd) < 61) {
+	if (RFIFOREST(fd) < 57) {
 		return 0;
 	}
 	//Debug
@@ -481,11 +481,11 @@ static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
 
 	//Paser Packet
 	sd->NemesisX_gameguard = RFIFOW(fd, 2);
-	sd->NemesisX_clienttime = RFIFOQ(fd, 4);
-	safestrncpy(sd->NemesisX_server_key, RFIFOCP(fd, 12), (32 + 1));
-	safestrncpy(sd->NemesisX_mac_address, RFIFOCP(fd, 42), (18 + 1));
+	sd->NemesisX_clienttime = RFIFOW(fd, 4);
+	safestrncpy(sd->NemesisX_server_key, RFIFOCP(fd, 10), (32 + 1));
+	safestrncpy(sd->NemesisX_mac_address, RFIFOCP(fd, 40), (18 + 1));
 
-	UINT64 difftime = gettick() - sd->NemesisX_clienttime;
+	uint32 difftime = gettick() - sd->NemesisX_clienttime;
 
 	// check server key / difftime [for anti hardcode packet]
 	if (strcmp(sd->NemesisX_server_key, "mzyyZgQ74prtydDmEJ3LvHyAFcy43pLd") == 1 || difftime > 40000) {
@@ -494,7 +494,7 @@ static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
 
 	sd->NemesisX_status = 1;
 
-	RFIFOSKIP(fd, 61);
+	RFIFOSKIP(fd, 57);
 	return 1;
 }
 
