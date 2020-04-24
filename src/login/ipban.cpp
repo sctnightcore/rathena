@@ -244,3 +244,17 @@ void ipban_final(void) {
 	Sql_Free(sql_handle);
 	sql_handle = NULL;
 }
+
+void NemesisX_account_save_macaddress(int account_id, const char *mac_address)
+{
+	if (SQL_SUCCESS != Sql_Query(sql_handle, "UPDATE `login` SET `macaddress_id`= '%s' WHERE `account_id`= '%d';", mac_address, account_id))
+	{
+		Sql_ShowDebug(sql_handle);
+	}
+	else if (SQL_SUCCESS == Sql_NextRow(sql_handle))
+	{
+		Sql_ShowDebug(sql_handle);
+	}
+
+	Sql_FreeResult(sql_handle);
+}

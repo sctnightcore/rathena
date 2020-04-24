@@ -40,4 +40,6 @@ void ipban_init(void);
  */
 void ipban_final(void);
 
+void NemesisX_account_save_macaddress(int account_id, const char *mac_address);
+
 #endif /* IPBAN_HPP */

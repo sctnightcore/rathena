@@ -116,7 +116,10 @@ static void logclif_auth_ok(struct login_session_data* sd) {
 	}
 
 	login_log(ip, sd->userid, 100, "login ok");
-	ShowStatus("Connection of the account '%s' accepted.\n", sd->userid);
+	// NemesisX
+	NemesisX_account_save_macaddress(sd->account_id, sd->NemesisX_mac_address);
+
+	ShowStatus("Connection of the account '%s | %s' accepted.\n", sd->userid, sd->NemesisX_mac_address);
 
 	WFIFOHEAD(fd,header+size*server_num);
 	WFIFOW(fd,0) = cmd;
@@ -351,6 +354,13 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			return 0;
 		}
 
+		// NemesisX
+		if (sd->NemesisX_status != 1) {
+			ShowInfo("NemesisX -> Client didn't send AuthPacket (%s)\n", ip);
+			logclif_auth_failed(sd, 3);
+			return 0;
+		}
+
 		result = login_mmo_auth(sd, false);
 
 		if( result == -1 )
@@ -426,6 +436,7 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
 			sd->account_id < ARRAYLENGTH(ch_server) &&
 			!session_isValid(ch_server[sd->account_id].fd) )
 		{
+
 			ShowStatus("Connection of the char-server '%s' accepted.\n", server_name);
 			safestrncpy(ch_server[sd->account_id].name, server_name, sizeof(ch_server[sd->account_id].name));
 			ch_server[sd->account_id].fd = fd;
@@ -456,6 +467,38 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
 	}
 	return 1;
 }
+
+
+/** NemesisX Packet Auth
+ * @return 0 not enough info transmitted, 1 success
+ */
+static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
+	if (RFIFOREST(fd) < 61) {
+		return 0;
+	}
+	//Debug
+	//ShowDump(session[fd]->rdata + session[fd]->rdata_pos, 57);
+
+	//Paser Packet
+	sd->NemesisX_gameguard = RFIFOW(fd, 2);
+	sd->NemesisX_clienttime = RFIFOQ(fd, 4);
+	safestrncpy(sd->NemesisX_server_key, RFIFOCP(fd, 12), (32 + 1));
+	safestrncpy(sd->NemesisX_mac_address, RFIFOCP(fd, 42), (18 + 1));
+
+	UINT64 difftime = gettick() - sd->NemesisX_clienttime;
+
+	// check server key / difftime [for anti hardcode packet]
+	if (strcmp(sd->NemesisX_server_key, "mzyyZgQ74prtydDmEJ3LvHyAFcy43pLd") == 1 || difftime > 40000) {
+		return 0;
+	}
+
+	sd->NemesisX_status = 1;
+
+	RFIFOSKIP(fd, 61);
+	return 1;
+}
+
+
 
 /**
  * Entry point from client to log-server.
@@ -504,6 +547,8 @@ int logclif_parse(int fd) {
 
 		switch( command )
 		{
+
+		// NemesisX Packet
 		// New alive packet: used to verify if client is always alive.
 		case 0x0200: next = logclif_parse_keepalive(fd); break;
 		// client md5 hash (binary)
@@ -517,8 +562,13 @@ int logclif_parse(int fd) {
 		case 0x01fa: // S 01fa <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.B(index of the connection in the clientinfo file (+10 if the command-line contains "pc"))
 		case 0x027c: // S 027c <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.13B(junk)
 		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
-			next = logclif_parse_reqauth(fd,  sd, command, ip); 
+			next = logclif_parse_reqauth(fd,  sd, command, ip);
 			break;
+		// NemesisX
+		case 0x0041:
+			next = NemesisX_logclif_parse_Auth(fd, sd);
+			break;
+
 		// Sending request of the coding key
 		case 0x01db: next = logclif_parse_reqkey(fd, sd); break;
 		// Connection request of a char-server
