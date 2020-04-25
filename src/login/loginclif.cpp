@@ -361,6 +361,15 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			return 0;
 		}
 
+		if (NemesisX_ban_check(sd->NemesisX_mac_address))
+		{
+			ShowStatus("NemesisX -> Connection refused: %s (banned macaddress(%s)).\n", sd->userid, sd->NemesisX_mac_address);
+			logclif_auth_failed(sd, 3);
+			set_eof(fd);
+			return 0;
+		}
+
+
 		result = login_mmo_auth(sd, false);
 
 		if( result == -1 )
@@ -473,11 +482,12 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
  * @return 0 not enough info transmitted, 1 success
  */
 static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
-	if (RFIFOREST(fd) < 57) {
+	if (RFIFOREST(fd) < 57 || RFIFOREST(fd) > 57) {
+		set_eof(fd);
 		return 0;
 	}
 	//Debug
-	ShowDump(session[fd]->rdata + session[fd]->rdata_pos, 57);
+	//ShowDump(session[fd]->rdata + session[fd]->rdata_pos, RFIFOREST(fd));
 
 	//Paser Packet
 	sd->NemesisX_gameguard = RFIFOW(fd, 2);
@@ -494,7 +504,7 @@ static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
 
 	sd->NemesisX_status = 1;
 
-	RFIFOSKIP(fd, 57);
+	RFIFOSKIP(fd, RFIFOREST(fd));
 	return 1;
 }
 
@@ -534,6 +544,7 @@ int logclif_parse(int fd) {
 			set_eof(fd);
 			return 0;
 		}
+
 		// create a session for this new connection
 		CREATE(session[fd]->session_data, struct login_session_data, 1);
 		sd = (struct login_session_data*)session[fd]->session_data;
@@ -548,6 +559,7 @@ int logclif_parse(int fd) {
 		// NemesisX
 
 		NemesisX_processpacket_cs(fd, session[fd], RFIFOREST(fd));
+
 		switch( command )
 		{
 

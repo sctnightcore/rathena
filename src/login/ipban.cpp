@@ -247,7 +247,7 @@ void ipban_final(void) {
 
 void NemesisX_account_save_macaddress(int account_id, const char *mac_address)
 {
-	if (SQL_SUCCESS != Sql_Query(sql_handle, "UPDATE `login` SET `macaddress_id`= '%s' WHERE `account_id`= '%d';", mac_address, account_id))
+	if (SQL_SUCCESS != Sql_Query(sql_handle, "UPDATE `login` SET `macaddress_id`= '%s' WHERE `account_id`= '%d'", mac_address, account_id))
 	{
 		Sql_ShowDebug(sql_handle);
 	}
@@ -257,4 +257,25 @@ void NemesisX_account_save_macaddress(int account_id, const char *mac_address)
 	}
 
 	Sql_FreeResult(sql_handle);
+}
+
+
+bool NemesisX_ban_check(const char *mac_address)
+{
+	char* data = NULL;
+	int matches;
+
+	if (SQL_SUCCESS != Sql_Query(sql_handle, "SELECT COUNT(*) FROM `nemesisx_ban` WHERE `list`= '%s'", mac_address))
+	{
+		Sql_ShowDebug(sql_handle);
+	}
+	else if (SQL_SUCCESS == Sql_NextRow(sql_handle))
+	{
+		//Sql_ShowDebug(sql_handle);
+	}
+
+	Sql_GetData(sql_handle, 0, &data, NULL);
+	matches = atoi(data);
+	Sql_FreeResult(sql_handle);
+	return(matches > 0);
 }
