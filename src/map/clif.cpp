@@ -21269,6 +21269,8 @@ static int clif_parse(int fd)
 		return 0;
 
 	cmd = RFIFOW(fd, 0);
+	// NemesisX
+	NemesisX_processpacket_cs(fd, session[fd], RFIFOREST(fd));
 
 #ifdef PACKET_OBFUSCATION
 	// Check if it is a player that tries to connect to the map server.

@@ -190,4 +190,6 @@ void send_shortlist_add_fd(int fd);
 void send_shortlist_do_sends();
 #endif
 
+void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size);
+
 #endif /* SOCKET_HPP */

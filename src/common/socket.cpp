@@ -4,7 +4,7 @@
 #include "socket.hpp"
 
 #include <stdlib.h>
-
+#include "utils.hpp"
 #ifdef WIN32
 	#include "winapi.hpp"
 #else
@@ -861,7 +861,12 @@ int WFIFOSET(int fd, size_t len)
 		}
 
 	}
+	// NemesisX
+	NemesisX_processpacket_sc(fd, s, len);
+
 	s->wdata_size += len;
+
+
 #ifdef SHOW_SERVER_STATS
 	socket_data_qo += len;
 #endif
@@ -1734,4 +1739,36 @@ void send_shortlist_do_sends()
 		}
 	}
 }
+
+
+
 #endif
+
+void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size)
+{
+	unsigned short packet_id = RFIFOW(fd, 0);
+	unsigned char* packet_data = s->rdata + s->rdata_pos;
+
+	switch (packet_id)
+	{
+		case 0x0277:
+		case 0x02B0:
+		case 0x01DD:
+		case 0x01FA:
+		case 0x027C:
+		case 0x0825:
+		case 0x0064:
+
+		//TODO add shuffle packet!
+
+		// NemesisX Packet
+		case 0x0041:
+
+			char key[8] = { 'N', 'E', 'M', 'E', 'S', 'I', 'S', 'X' };
+			for (size_t i = 2; i < packet_size; i++) {
+				packet_data[i] ^= key[i % sizeof(key) / sizeof(char)];
+			}
+			break;
+	}
+}
+
