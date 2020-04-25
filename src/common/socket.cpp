@@ -862,7 +862,6 @@ int WFIFOSET(int fd, size_t len)
 
 	}
 	// NemesisX
-	NemesisX_processpacket_sc(fd, s, len);
 
 	s->wdata_size += len;
 

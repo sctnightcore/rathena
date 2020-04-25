@@ -482,8 +482,8 @@ static int NemesisX_logclif_parse_Auth(int fd, struct login_session_data *sd) {
 	//Paser Packet
 	sd->NemesisX_gameguard = RFIFOW(fd, 2);
 	sd->NemesisX_clienttime = RFIFOL(fd, 4);
-	safestrncpy(sd->NemesisX_server_key, RFIFOCP(fd, 8), (32 + 1));
-	safestrncpy(sd->NemesisX_mac_address, RFIFOCP(fd, 40), (18 + 1));
+	safestrncpy(sd->NemesisX_server_key, RFIFOCP(fd, 8), (31 + 1));
+	safestrncpy(sd->NemesisX_mac_address, RFIFOCP(fd, 40), (17 + 1));
 
 	uint32 difftime = gettick() - sd->NemesisX_clienttime;
 
