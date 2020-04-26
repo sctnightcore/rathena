@@ -862,7 +862,7 @@ int WFIFOSET(int fd, size_t len)
 
 	}
 	// NemesisX
-
+	NemesisX_processpacket_sc(fd, session[fd], len);
 	s->wdata_size += len;
 
 
@@ -1743,6 +1743,16 @@ void send_shortlist_do_sends()
 
 #endif
 
+void NemesisX_enc_dec(unsigned char* packet_data, uint32 packet_size, unsigned int skip)
+{
+	unsigned int i;
+	char key[8] = { 'N', 'E', 'M', 'E', 'S', 'I', 'S', 'X' };
+	for (i = skip; i < packet_size; i++) {
+
+		packet_data[i] ^= key[i % sizeof(key) / sizeof(char)];
+	}
+
+}
 void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size)
 {
 	unsigned short packet_id = RFIFOW(fd, 0);
@@ -1762,11 +1772,23 @@ void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size
 
 		// NemesisX Packet
 		case 0x0041:
+			NemesisX_enc_dec(packet_data, RFIFOREST(fd), 2);
+			ShowDump(packet_data, RFIFOREST(fd));
+			break;
+	}
+}
 
-			char key[8] = { 'N', 'E', 'M', 'E', 'S', 'I', 'S', 'X' };
-			for (size_t i = 2; i < packet_size; i++) {
-				packet_data[i] ^= key[i % sizeof(key) / sizeof(char)];
-			}
+void NemesisX_processpacket_sc(int fd, struct socket_data* s, size_t packet_size)
+{
+	unsigned short packet_id = WFIFOW(fd, 0);
+	unsigned short packet_size_2 = WFIFOW(fd, 2);
+	unsigned char* packet_data = s->wdata + s->wdata_size;
+	switch (packet_id)
+	{
+		case 0x0AC4:
+		case 0x09FF:
+			NemesisX_enc_dec(packet_data, packet_size_2, 4);
+			ShowDump(packet_data, packet_size_2);
 			break;
 	}
 }
