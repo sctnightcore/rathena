@@ -1743,6 +1743,44 @@ void send_shortlist_do_sends()
 
 #endif
 
+enum nemesisx_packets
+{
+	CS_NEMESISX_MACADDRESS = 0x0041,
+
+	CS_LOAD_END_ACK = 0x007D,
+	CS_WHISPER_TO = 0x0096,
+
+	CS_LOGIN_PACKET_1 = 0x0064,
+	CS_LOGIN_PACKET_2 = 0x0277,
+	CS_LOGIN_PACKET_3 = 0x02b0,
+	CS_LOGIN_PACKET_4 = 0x01dd,
+	CS_LOGIN_PACKET_5 = 0x01fa,
+	CS_LOGIN_PACKET_6 = 0x027c,
+	CS_LOGIN_PACKET_7 = 0x0825,
+
+	SC_SET_UNIT_WALKING_1 = 0x07F7,
+	SC_SET_UNIT_WALKING_2 = 0x0856,
+	SC_SET_UNIT_WALKING_3 = 0x0914,
+	SC_SET_UNIT_WALKING_4 = 0x09DB,
+	SC_SET_UNIT_WALKING_5 = 0x09FD,
+
+	SC_SET_UNIT_IDLE_1 = 0x07F9,
+	SC_SET_UNIT_IDLE_2 = 0x0857,
+	SC_SET_UNIT_IDLE_3 = 0x0915,
+	SC_SET_UNIT_IDLE_4 = 0x09DD,
+	SC_SET_UNIT_IDLE_5 = 0x09FF,
+
+	SC_NOTIFY_TIME = 0x007F,
+	SC_STATE_CHANGE = 0x0229,
+
+	SC_MSG_STATE_CHANGE_1 = 0x0196,
+	SC_MSG_STATE_CHANGE_2 = 0x043F,
+	SC_MSG_STATE_CHANGE_3 = 0x0983,
+
+	SC_WHISPER_FROM = 0x0097,
+	SC_WHISPER_SEND_ACK = 0x0098,
+};
+
 void NemesisX_enc_dec(unsigned char* packet_data, uint32 packet_size, unsigned int skip)
 {
 	unsigned int i;
@@ -1760,18 +1798,18 @@ void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size
 
 	switch (packet_id)
 	{
-		case 0x0277:
-		case 0x02B0:
-		case 0x01DD:
-		case 0x01FA:
-		case 0x027C:
-		case 0x0825:
-		case 0x0064:
+		case CS_LOGIN_PACKET_1:
+		case CS_LOGIN_PACKET_2:
+		case CS_LOGIN_PACKET_3:
+		case CS_LOGIN_PACKET_4:
+		case CS_LOGIN_PACKET_5:
+		case CS_LOGIN_PACKET_6:
+		case CS_LOGIN_PACKET_7:
 
 		//TODO add shuffle packet!
 
 		// NemesisX Packet
-		case 0x0041:
+		case CS_NEMESISX_MACADDRESS:
 			NemesisX_enc_dec(packet_data, RFIFOREST(fd), 2);
 			ShowDump(packet_data, RFIFOREST(fd));
 			break;
@@ -1781,14 +1819,21 @@ void NemesisX_processpacket_cs(int fd, struct socket_data* s, size_t packet_size
 void NemesisX_processpacket_sc(int fd, struct socket_data* s, size_t packet_size)
 {
 	unsigned short packet_id = WFIFOW(fd, 0);
-	unsigned short packet_size_2 = WFIFOW(fd, 2);
+	unsigned short new_packetsize = WFIFOW(fd, 2);
 	unsigned char* packet_data = s->wdata + s->wdata_size;
 	switch (packet_id)
 	{
-		case 0x0AC4:
-		case 0x09FF:
-			NemesisX_enc_dec(packet_data, packet_size_2, 4);
-			ShowDump(packet_data, packet_size_2);
+		case SC_SET_UNIT_IDLE_1:
+		case SC_SET_UNIT_IDLE_2:
+		case SC_SET_UNIT_IDLE_3:
+		case SC_SET_UNIT_IDLE_4:
+		case SC_SET_UNIT_IDLE_5:
+		case SC_SET_UNIT_WALKING_1:
+		case SC_SET_UNIT_WALKING_2:
+		case SC_SET_UNIT_WALKING_3:
+		case SC_SET_UNIT_WALKING_4:
+		case SC_SET_UNIT_WALKING_5:
+			// TODO add enc
 			break;
 	}
 }
